@@ -45,7 +45,7 @@ export const deleteLocation = async (id) => {
   );
 
   if (location.length === 0) {
-    throw new Error("Nenhum usuário encontrado com esse ID!");
+    throw new Error("Nenhuma localização encontrada com esse ID!");
   }
 
   const [response] = await db.query(
