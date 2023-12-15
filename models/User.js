@@ -16,17 +16,16 @@ export const getAllUsers = async () => {
   return users;
 };
 
-export const createUser = async (userData) => {
-  const { username, password, name, email, department, roles } = userData;
-
-  if (password.length < 8) {
-    throw new Error("A senha precisa ter no mínimo 8 caracteres");
-  }
-
-  const [existingUser] = await db.query(
+export const getUserByUsername = async (username) => {
+  const [user] = await db.query(
     "SELECT GU.USUARIO_ST_ALTERNATIVO, GU.USUARIO_ST_NOME, GU.USUARIO_ST_EMAIL, GU.USUARIO_ST_DEPARTAMENTO, GU.USUARIO_ST_PERMISSAO FROM GLO_USUARIOS GU WHERE GU.USUARIO_ST_ALTERNATIVO = ?",
     [username]
   );
+  return user[0];
+};
+
+export const createUser = async (userData) => {
+  const { username, password, name, email, department, roles } = userData;
 
   if (existingUser.length > 0) {
     throw new Error("A conta com esse username já existe!");
@@ -35,7 +34,7 @@ export const createUser = async (userData) => {
   // password hash
   const salt = await bcrypt.genSalt();
   const passwordHash = await bcrypt.hash(password, salt);
-//PACKAGE
+  //PACKAGE
   const [response] = await db.query(
     "INSERT INTO GLO_USUARIOS (USUARIO_ST_ALTERNATIVO, USUARIO_ST_SENHA, USUARIO_ST_NOME, USUARIO_ST_EMAIL, USUARIO_ST_DEPARTAMENTO, USUARIO_ST_PERMISSAO) VALUES (?, ?, ?, ?, ?, ?)",
     [username, passwordHash, name, email, department, roles]

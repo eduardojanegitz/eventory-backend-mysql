@@ -34,8 +34,12 @@ export const getAllUsers = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
-    const { username, password, name, email, department, roles } =
-      req.body;
+    const { username, password, name, email, department, roles } = req.body;
+
+    const existingUser = await userModel.getUserByUsername(username);
+    if (existingUser) {
+      return res.status(400).json({ error: "Usuário já existente." });
+    }
 
     const response = {
       username,
@@ -46,11 +50,17 @@ export const createUser = async (req, res) => {
       roles,
     };
 
+    if (password.length < 8) {
+      res
+        .status(400)
+        .json({ error: "A senha precisa ter no mínimo 8 caracteres." });
+    }
+
     await userModel.createUser(response);
 
     res.status(201).json({ msg: "Usuário criado com sucesso!" });
   } catch (error) {
-    console.error({ error: error.message });
+    console.error({ error: error });
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 };
