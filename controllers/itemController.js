@@ -1,9 +1,9 @@
-import Item from "../models/Item.js";
+import * as Item from "../models/Item.js";
 
 export const createItem = async (req, res) => {
   try {
     const item = {
-      branch: req.body.branch,
+      branchId: req.body.branchId,
       name: req.body.name,
       description: req.body.description,
       value: req.body.value,
@@ -13,26 +13,28 @@ export const createItem = async (req, res) => {
       serialNumber: req.body.serialNumber,
       tag: req.body.tag,
       acquisitionDate: req.body.acquisitionDate,
-      depreciation: req.body.depreciation,
+      writeOffDate: req.body.writeOffDate,
       itemGroup: req.body.itemGroup,
       costCenter: req.body.costCenter,
       invoice: req.body.invoice,
     };
 
-    const response = await Item.create(item);
-    res.status(201).json({ response, msg: "Item criado com sucesso!" });
+    await Item.createItem(item);
+    res.status(201).json({ msg: "Item criado com sucesso!" });
   } catch (error) {
     console.log(error);
+    res.status(500).json("Erro interno do servidor: ", error);
   }
 };
 
 export const getAllItems = async (req, res) => {
   try {
-    const getItem = await Item.find();
+    const getItem = await Item.getAllItems();
 
     res.status(200).json(getItem);
   } catch (error) {
     console.log(error);
+    res.status(500).json({ error: "Erro interno do servidor: ", error });
   }
 };
 
