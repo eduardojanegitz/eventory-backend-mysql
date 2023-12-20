@@ -1,9 +1,9 @@
-import Item from "../models/Item.js";
-import Movement from "../models/Movement.js";
+import * as Item from "../models/Item.js";
+import * as Movement from "../models/Movement.js";
 
 export const getAll = async (req, res) => {
   try {
-    const getMovement = await Movement.find();
+    const getMovement = await Movement.getAllMovement();
     res.status(200).json(getMovement);
   } catch (error) {
     console.error("Erro ao buscar movimentos:", error);
@@ -13,37 +13,35 @@ export const getAll = async (req, res) => {
 
 export const createMovement = async (req, res) => {
   try {
-    const { name, actualLocation, newLocation, reason, observations } =
+    const { item, newLocation, reason, observations, user } =
       req.body;
 
-    if (!name || !actualLocation || !newLocation || !reason || !observations) {
-      return res.status(400).json({ message: "Campos obrigatórios ausentes." });
+    if (!item || !newLocation || !reason || !observations) {
+      return res.status(400).json({ error: "Campos obrigatórios ausentes." });
     }
 
-    const itemId = req.body.id;
+    // const itemId = req.body.id;
 
-    const item = await Item.findByIdAndUpdate(itemId, {
-      location: newLocation,
-    });
+    // const item = await Item.findByIdAndUpdate(itemId, {
+    //   location: newLocation,
+    // });
 
-    if (!item) {
-      return res.status(404).json({ message: "Item não encontrado." });
-    }
+    // if (!item) {
+    //   return res.status(404).json({ message: "Item não encontrado." });
+    // }
 
     const movement = {
-      name,
-      actualLocation,
+      item,
       newLocation,
       reason,
       observations,
-      user: req.username,
+      user,
     };
 
-    const response = await Movement.create(movement);
-    res
-      .status(201)
-      .json({ response, message: "Movimento registrado com sucesso!" });
+    await Movement.createMovement(movement);
+    res.status(201).json({ msg: "Movimento registrado com sucesso!" });
   } catch (error) {
+    console.error(error)
     res.status(500).json("Erro interno do servidor:", error);
   }
 };
