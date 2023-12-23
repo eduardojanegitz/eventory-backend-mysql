@@ -3,7 +3,7 @@ import db from "../config/db.js";
 
 export const getAllCostCenter = async () => {
   const [costCenter] = await db.query(
-    "SELECT CUSTO_IN_ID, CUSTO_ST_NOME, CUSTO_ST_DESCRICAO, CUSTO_CH_ATIVO, CUSTO_DT_CRIACAO FROM GLO_CENTRO_CUSTO"
+    "SELECT CUSTO_IN_ID as _id, CUSTO_ST_NOME as name, CUSTO_ST_DESCRICAO as description, CUSTO_CH_ATIVO as active, CUSTO_DT_CRIACAO as createdAt FROM GLO_CENTRO_CUSTO"
   );
   return costCenter;
 };

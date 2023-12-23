@@ -2,7 +2,7 @@ import db from "../config/db.js";
 
 export const getAllLocation = async () => {
   const [location] = await db.query(
-    "SELECT GL.LOCALIZACAO_ST_NOME, GL.LOCALIZACAO_ST_DESCRICAO, GL.LOCALIZACAO_CH_ATIVO FROM GLO_LOCALIZACAO GL"
+    "SELECT GL.LOCALIZACAO_IN_ID as _id, GL.LOCALIZACAO_ST_NOME as name, GL.LOCALIZACAO_ST_DESCRICAO as description FROM GLO_LOCALIZACAO GL"
   );
   return location;
 };
