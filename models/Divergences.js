@@ -1,28 +1,8 @@
-import mongoose from "mongoose";
+import db from "../config/db.js";
 
-const DivergencesSchema = new mongoose.Schema(
-  {
-    item: [
-      {
-        descricao: String,
-        nome: String,
-        localizacao: String,
-        serial: String,
-        tag: String
-      },
-    ],
-    location: {
-      type: String 
-    },
-    user: {
-      type: mongoose.Schema.Types.String,
-      ref: "User",
-      required: true,
-    },
-  },
-  { timestamps: true }
-);
-
-const Divergences = mongoose.model("Divergences", DivergencesSchema);
-
-export default Divergences;
+export const getAllDivergences = async () => {
+  const [divergence] = await db.query(
+    "SELECT * FROM EST_DIVERGENCIA"
+  );
+  return divergence;
+};

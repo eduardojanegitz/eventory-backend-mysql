@@ -1,9 +1,9 @@
-import Divergences from "../models/Divergences.js";
+import * as Divergences from "../models/Divergences.js";
 import ApprovedDivergences from "../models/ApprovedDivergences.js";
 
 export const getAllDivergences = async (req, res) => {
   try {
-    const getDivergences = await Divergences.find();
+    const getDivergences = await Divergences.getAllDivergences();
     res.status(200).json(getDivergences);
   } catch (error) {
     console.error("Erro na consulta das divergências:", error);
