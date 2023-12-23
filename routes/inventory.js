@@ -8,6 +8,7 @@ const router = express.Router();
 router.get("/inventory", getAllInventory);
 router.get("/inventory/item/:tag", getOne);
 router.get("/inventory/location/:location", getItemByLocation);
-router.post("/inventory", authMiddleware, createInventory);
+// router.post("/inventory", authMiddleware, createInventory);
+router.post("/inventory", createInventory);
 
 export default router;
