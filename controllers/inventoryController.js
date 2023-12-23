@@ -1,30 +1,9 @@
-import Inventory from "../models/Inventory.js";
-import Item from "../models/Item.js";
-import Counter from "../models/Counter.js";
-
-async function getNextInventoryCode() {
-  try {
-    const counter = await Counter.findOneAndUpdate(
-      { name: "inventoryCode" },
-      { $inc: { count: 1 } },
-      { new: true }
-    );
-
-    if (!counter) {
-      throw new Error("Não foi possível obter o próximo número de inventário.");
-    }
-
-    return counter.count;
-  } catch (error) {
-    throw new Error(
-      `Erro ao obter o próximo número de inventário: ${error.message}`
-    );
-  }
-}
+import * as Inventory from "../models/Inventory.js";
+import * as Item from "../models/Item.js";
 
 export const getAllInventory = async (req, res) => {
   try {
-    const getInventory = await Inventory.find();
+    const getInventory = await Inventory.getAllInventories();
     res.status(200).json(getInventory);
   } catch (error) {
     console.error("Erro na consulta dos inventários:", error);
@@ -45,17 +24,34 @@ export const getItemByLocation = async (req, res) => {
 
 export const createInventory = async (req, res) => {
   try {
-    const nextInventoryCode = await getNextInventoryCode();
-    const { location } = req.body;
-    const item = {
-      inventoryCode: nextInventoryCode,
-      item: req.body.list,
-      user: req.username,
-      location
+    const { location, observation, user, items } = req.body;
+
+    const itemsLocationMatch = await Inventory.checkItemsLocationMatch(
+      location,
+      items,
+      user
+    );
+
+    if (!itemsLocationMatch) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "A localização do inventário é divergente dos itens selecionados.",
+        });
+    }
+
+    const response = {
+      location,
+      observation,
+      user,
+      items,
     };
 
-    const response = await Inventory.create(item);
-    res.status(201).json({ response, msg: "Item inventariado com sucesso" });
+    // Chame a função createInventory do seu model
+    await Inventory.createInventory(response);
+
+    res.status(201).json({ msg: "Inventário criado com sucesso" });
   } catch (error) {
     console.error("Erro ao criar inventário:", error);
     res.status(500).json({ error: "Erro ao criar inventário" });
