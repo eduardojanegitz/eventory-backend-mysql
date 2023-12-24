@@ -1,12 +1,38 @@
 import db from "../config/db.js";
 import bcrypt from "bcrypt";
 
-const selectUserByIdQuery =
-  "SELECT * FROM GLO_USUARIOS WHERE USUARIO_IN_ID = ?";
-const selectUsersQuery =
-  "SELECT USUARIO_IN_ID as _id, USUARIO_ST_ALTERNATIVO as username, USUARIO_ST_NOME as name, USUARIO_ST_EMAIL as email, USUARIO_ST_DEPARTAMENTO as department, USUARIO_ST_PERMISSAO as roles, DATE_FORMAT(USUARIO_DT_CRIACAO, '%d/%m/%Y %H:%i:%s') AS createdAt FROM GLO_USUARIOS WHERE USUARIO_CH_ATIVO = 'S'";
-const selectUserByUsernameQuery =
-  "SELECT USUARIO_ST_ALTERNATIVO, USUARIO_ST_NOME, USUARIO_ST_EMAIL, USUARIO_ST_DEPARTAMENTO, USUARIO_ST_PERMISSAO FROM GLO_USUARIOS WHERE USUARIO_ST_ALTERNATIVO = ?";
+const selectUserByIdQuery = `SELECT USUARIO_IN_ID as _id, 
+    USUARIO_ST_ALTERNATIVO as username, 
+    USUARIO_ST_NOME as name, 
+    USUARIO_ST_EMAIL as email, 
+    USUARIO_ST_DEPARTAMENTO as department, 
+    USUARIO_ST_PERMISSAO as roles, 
+    DATE_FORMAT(USUARIO_DT_CRIACAO, '%d/%m/%Y %H:%i:%s') AS createdAt 
+  FROM GLO_USUARIOS 
+  WHERE USUARIO_IN_ID = ?`;
+
+const selectUsersQuery = `SELECT USUARIO_IN_ID as _id, 
+    USUARIO_ST_ALTERNATIVO AS username, 
+    USUARIO_ST_NOME AS name, 
+    USUARIO_ST_EMAIL AS email, 
+    USUARIO_ST_DEPARTAMENTO AS department, 
+    USUARIO_ST_PERMISSAO AS roles,
+    CASE 
+      USUARIO_CH_ATIVO
+      WHEN 'S' THEN 'Ativo'
+      WHEN 'N' THEN 'Inativo'
+      ELSE 'N/D'
+    END AS active,
+    DATE_FORMAT(USUARIO_DT_CRIACAO, '%d/%m/%Y %H:%i:%s') AS createdAt 
+  FROM GLO_USUARIOS`;
+
+const selectUserByUsernameQuery = `SELECT USUARIO_ST_ALTERNATIVO, 
+    USUARIO_ST_NOME, USUARIO_ST_EMAIL, 
+    USUARIO_ST_DEPARTAMENTO, 
+    USUARIO_ST_PERMISSAO 
+    FROM GLO_USUARIOS 
+   WHERE 
+    USUARIO_ST_ALTERNATIVO = ?`;
 
 export const getUserById = async (id) => {
   const [user] = await db.query(selectUserByIdQuery, [id]);
@@ -30,56 +56,66 @@ export const createUser = async (userData) => {
   const passwordHash = await bcrypt.hash(password, salt);
 
   const [response] = await db.query(
-    "INSERT INTO GLO_USUARIOS (USUARIO_ST_ALTERNATIVO, USUARIO_ST_SENHA, USUARIO_ST_NOME, USUARIO_ST_EMAIL, USUARIO_ST_DEPARTAMENTO, USUARIO_ST_PERMISSAO) VALUES (?, ?, ?, ?, ?, ?)",
+    `INSERT INTO GLO_USUARIOS (
+      USUARIO_ST_ALTERNATIVO, 
+      USUARIO_ST_SENHA, 
+      USUARIO_ST_NOME, 
+      USUARIO_ST_EMAIL, 
+      USUARIO_ST_DEPARTAMENTO,
+      USUARIO_ST_PERMISSAO) 
+    VALUES (?, ?, ?, ?, ?, ?)`,
     [username, passwordHash, name, email, department, roles]
   );
 
   return response;
 };
 
-const updateUserQuery =
-  "UPDATE GLO_USUARIOS SET USUARIO_ST_ALTERNATIVO = ?, USUARIO_ST_NOME = ?, USUARIO_ST_EMAIL = ?, USUARIO_ST_SENHA = ?, USUARIO_ST_DEPARTAMENTO = ?, USUARIO_ST_PERMISSAO = ?, USUARIO_CH_ATIVO = ? WHERE USUARIO_IN_ID = ?";
-
 export const updateUser = async (id, userData) => {
-  const { username, name, email, password, department, roles, active } =
-    userData;
+  const columnMappings = {
+    username: "USUARIO_ST_ALTERNATIVO",
+    name: "USUARIO_ST_NOME",
+    email: "USUARIO_ST_EMAIL",
+    password: "USUARIO_ST_SENHA",
+    department: "USUARIO_ST_DEPARTAMENTO",
+    roles: "USUARIO_ST_PERMISSAO",
+    active: "USUARIO_CH_ATIVO",
+  };
 
-  const [user] = await db.query(selectUserByIdQuery, [id]);
+  const updateFields = [];
+  const updateValues = [];
 
-  if (user.length === 0) {
-    throw new Error("Nenhum usuário encontrado com esse ID!");
+  for (const [key, value] of Object.entries(userData)) {
+    if (value === undefined || !columnMappings[key]) {
+      continue;
+    }
+
+    if (key === "password") {
+      const salt = await bcrypt.genSalt();
+      const updatedPasswordHash = await bcrypt.hash(value, salt);
+      updateFields.push(`${columnMappings[key]} = ?`);
+      updateValues.push(updatedPasswordHash);
+    } else {
+      updateFields.push(`${columnMappings[key]} = ?`);
+      updateValues.push(value);
+    }
   }
 
-  let updatedPasswordHash = user[0].password;
+  const updateQuery = `UPDATE GLO_USUARIOS SET ${updateFields.join(
+    ", "
+  )} WHERE USUARIO_IN_ID = ?`;
+  const updateParams = [...updateValues, id];
 
-  if (password) {
-    const salt = await bcrypt.genSalt();
-    updatedPasswordHash = await bcrypt.hash(password, salt);
-  }
-
-  const [response] = await db.query(updateUserQuery, [
-    username,
-    name,
-    email,
-    updatedPasswordHash,
-    department,
-    roles,
-    active,
-    id,
-  ]);
+  const [response] = await db.query(updateQuery, updateParams);
 
   return response;
 };
 
-const deleteUserQuery = "DELETE FROM GLO_USUARIOS WHERE USUARIO_IN_ID = ?";
+const deleteUserQuery = `DELETE FROM 
+    GLO_USUARIOS 
+  WHERE 
+    USUARIO_IN_ID = ?`;
 
 export const deleteUser = async (id) => {
-  const [user] = await db.query(selectUserByIdQuery, [id]);
-
-  if (user.length === 0) {
-    throw new Error("Nenhum usuário encontrado com esse ID!");
-  }
-
   const [response] = await db.query(deleteUserQuery, [id]);
 
   return response;
