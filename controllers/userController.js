@@ -47,10 +47,15 @@ export const createUser = async (req, res) => {
       return res.status(400).json({ error: "Campos obrigatórios ausentes." });
     }
 
-    if (password.length < 8) {
-      res
-        .status(400)
-        .json({ error: "A senha precisa ter no mínimo 8 caracteres." });
+    if (
+      password.length < 8 ||
+      !/\d/.test(password) ||
+      !/[A-Z]/.test(password)
+    ) {
+      return res.status(400).json({
+        error:
+          "A senha precisa ter no mínimo 8 caracteres, ser alfanumérica e conter pelo menos uma letra maiúscula.",
+      });
     }
 
     const userData = {
@@ -84,10 +89,15 @@ export const updateUser = async (req, res) => {
         .json({ error: "Nenhum usuário encontrado com esse ID!" });
     }
 
-    if (password < 8) {
-      return res
-        .status(400)
-        .json({ error: "A senha precisa ter no mínimo 8 caracteres." });
+    if (
+      password.length < 8 ||
+      !/\d/.test(password) ||
+      !/[A-Z]/.test(password)
+    ) {
+      return res.status(400).json({
+        error:
+          "A senha precisa ter no mínimo 8 caracteres, ser alfanumérica e conter pelo menos uma letra maiúscula.",
+      });
     }
 
     const response = {
