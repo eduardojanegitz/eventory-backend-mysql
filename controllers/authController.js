@@ -29,6 +29,7 @@ export const login = async (req, res) => {
         UserInfo: {
           username: foundUser.USUARIO_ST_ALTERNATIVO,
           roles: foundUser.USUARIO_ST_PERMISSAO,
+          id: foundUser.USUARIO_IN_ID
         },
       },
       process.env.ACCESS_TOKEN_SECRET,
@@ -78,6 +79,7 @@ export const refresh = (req, res) => {
         UserInfo: {
           username: foundUser.USUARIO_ST_ALTERNATIVO,
           roles: roles,
+          id: foundUser.USUARIO_IN_ID
         },
       },
       process.env.ACCESS_TOKEN_SECRET,

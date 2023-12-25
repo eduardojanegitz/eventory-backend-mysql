@@ -22,6 +22,7 @@ export const authMiddleware = (req, res, next) => {
       if (error) {
         res.status(401).json(error);
       }
+      req.id = decoded.UserInfo.id;
       req.username = decoded.UserInfo.username;
       req.roles = decoded.UserInfo.roles;
       return next();
