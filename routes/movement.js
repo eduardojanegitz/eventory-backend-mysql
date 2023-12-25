@@ -5,8 +5,8 @@ import { getOne } from "../controllers/itemController.js";
 
 const router = express.Router();
 
-// router.post("/movement", authMiddleware, createMovement);
-router.post("/movement", createMovement);
+router.post("/movement", authMiddleware, createMovement);
+// router.post("/movement", createMovement);
 router.get("/movement", getAll);
 router.get("/movement/item/:tag", getOne);
 

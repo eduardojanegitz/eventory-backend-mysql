@@ -1,47 +1,62 @@
-import * as Item from "../models/Item.js";
 import * as Movement from "../models/Movement.js";
+import { getItemById } from "../models/Item.js";
+import { getLocationById } from "../models/Location.js";
 
 export const getAll = async (req, res) => {
   try {
     const getMovement = await Movement.getAllMovement();
     res.status(200).json(getMovement);
   } catch (error) {
-    console.error("Erro ao buscar movimentos:", error);
-    res.status(500).json({ message: "Erro interno do servidor." });
+    console.error("Erro ao buscar movimentações:", error);
+    res.status(500).json({ message: "Erro interno do servidor: ", error });
   }
 };
 
 export const createMovement = async (req, res) => {
   try {
-    const { item, newLocation, reason, observations, user } =
-      req.body;
+    const { item, newLocation, reason, observations } = req.body;
 
-    if (!item || !newLocation || !reason || !observations) {
-      return res.status(400).json({ error: "Campos obrigatórios ausentes." });
+    const requiredFields = ["item", "newLocation", "reason"];
+    const missingFields = [];
+
+    requiredFields.forEach((field) => {
+      if (!req.body[field]) {
+        missingFields.push(field);
+      }
+    });
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: `Campos obrigatórios ausentes: ${missingFields.join(", ")}.`,
+      });
     }
 
-    // const itemId = req.body.id;
+    const itemExists = await getItemById(item);
+    if (!itemExists) {
+      return res.status(404).json({
+        error: "Nenhum item encontrado com esse código! Forneça um ID válido.",
+      });
+    }
 
-    // const item = await Item.findByIdAndUpdate(itemId, {
-    //   location: newLocation,
-    // });
-
-    // if (!item) {
-    //   return res.status(404).json({ message: "Item não encontrado." });
-    // }
-
+    const locationExists = await getLocationById(newLocation);
+    if (!locationExists) {
+      return res.status(404).json({
+        error: "Nenhuma localização encontrada! Forneça um ID válido.",
+      });
+    }
+    
     const movement = {
       item,
       newLocation,
       reason,
       observations,
-      user,
+      user: req.id 
     };
 
     await Movement.createMovement(movement);
-    res.status(201).json({ msg: "Movimento registrado com sucesso!" });
+    res.status(201).json({ msg: "Movimentação realizada com sucesso!" });
   } catch (error) {
-    console.error(error)
-    res.status(500).json("Erro interno do servidor:", error);
+    console.error(error);
+    res.status(500).json("Erro interno do servidor: ", error);
   }
 };
