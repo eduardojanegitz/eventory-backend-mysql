@@ -1,5 +1,14 @@
 import db from "../config/db.js";
 
+export const getLocationById = async (id) => {
+  const [location] = await db.query(
+    `
+      SELECT * FROM GLO_LOCALIZACAO WHERE LOCALIZACAO_IN_ID = ?
+    `, [id]
+  )
+  return location[0];
+}
+
 export const getAllLocation = async () => {
   const [location] = await db.query(
     "SELECT GL.LOCALIZACAO_IN_ID as _id, GL.LOCALIZACAO_ST_NOME as name, GL.LOCALIZACAO_ST_DESCRICAO as description FROM GLO_LOCALIZACAO GL"
