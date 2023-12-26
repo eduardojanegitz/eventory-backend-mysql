@@ -1,18 +1,30 @@
 import db from "../config/db.js";
 
+const selectLocationByIdQuery = `
+  SELECT 
+    GL.LOCALIZACAO_IN_ID AS _id,
+    GL.LOCALIZACAO_ST_NOME AS name, 
+    GL.LOCALIZACAO_ST_DESCRICAO AS description 
+  FROM GLO_LOCALIZACAO GL
+  WHERE
+    LOCALIZACAO_IN_ID = ?
+`;
+
+const selectLocationQuery = `
+  SELECT 
+    GL.LOCALIZACAO_IN_ID AS _id,
+    GL.LOCALIZACAO_ST_NOME AS name, 
+    GL.LOCALIZACAO_ST_DESCRICAO AS description 
+  FROM GLO_LOCALIZACAO GL
+`;
+
 export const getLocationById = async (id) => {
-  const [location] = await db.query(
-    `
-      SELECT * FROM GLO_LOCALIZACAO WHERE LOCALIZACAO_IN_ID = ?
-    `, [id]
-  )
+  const [location] = await db.query(selectLocationByIdQuery, [id]);
   return location[0];
-}
+};
 
 export const getAllLocation = async () => {
-  const [location] = await db.query(
-    "SELECT GL.LOCALIZACAO_IN_ID as _id, GL.LOCALIZACAO_ST_NOME as name, GL.LOCALIZACAO_ST_DESCRICAO as description FROM GLO_LOCALIZACAO GL"
-  );
+  const [location] = await db.query(selectLocationQuery);
   return location;
 };
 
@@ -20,7 +32,11 @@ export const createLocation = async (locationData) => {
   const { name, description } = locationData;
 
   const [response] = await db.query(
-    "INSERT INTO GLO_LOCALIZACAO (LOCALIZACAO_ST_NOME, LOCALIZACAO_ST_DESCRICAO) VALUES (?,?)",
+    `INSERT INTO GLO_LOCALIZACAO (
+      LOCALIZACAO_ST_NOME, 
+      LOCALIZACAO_ST_DESCRICAO
+      )
+    VALUES (?,?)`,
     [name, description]
   );
 
@@ -28,39 +44,40 @@ export const createLocation = async (locationData) => {
 };
 
 export const updateLocation = async (id, locationData) => {
-  const {name, description, active} = locationData;
+  const columnMappings = {
+    name: "LOCALIZACAO_ST_NOME",
+    description: "LOCALIZACAO_ST_DESCRICAO",
+    active: "LOCALIZACAO_CH_ATIVO",
+  };
 
-  const [location] = await db.query(
-    "SELECT LOCALIZACAO_ST_NOME, LOCALIZACAO_ST_DESCRICAO, LOCALIZACAO_CH_ATIVO FROM GLO_LOCALIZACAO WHERE LOCALIZACAO_IN_ID = ?",
-    [id]
-  );
+  const updateFields = [];
+  const updateValues = [];
 
-  if (location.length === 0) {
-    throw new Error("Nenhuma localização encontrada com esse ID!");
+  for (const [key, value] of Object.entries(locationData)) {
+    if (value === undefined || !columnMappings[key]) {
+      continue;
+    }
+
+    updateFields.push(`${columnMappings[key]} = ?`);
+    updateValues.push(value);
   }
 
-  const [response] = await db.query(
-    "UPDATE GLO_LOCALIZACAO SET LOCALIZACAO_ST_NOME = ?, LOCALIZACAO_ST_DESCRICAO = ?, LOCALIZACAO_CH_ATIVO = ? WHERE LOCALIZACAO_IN_ID = ?",
-    [name, description, active, id]
-  )
+  const updateQuery = `UPDATE GLO_LOCALIZACAO SET ${updateFields.join(
+    ", "
+  )} WHERE LOCALIZACAO_IN_ID = ?`;
+  const updateParams = [...updateValues, id];
+
+  const [response] = await db.query(updateQuery, updateParams);
 
   return response;
-}
+};
+
+const deleteLocationQuery = `
+  DELETE FROM GLO_LOCALIZACAO WHERE LOCALIZACAO_IN_ID = ?
+`;
 
 export const deleteLocation = async (id) => {
-  const [location] = await db.query(
-    "SELECT LOCALIZACAO_ST_NOME, LOCALIZACAO_ST_DESCRICAO, LOCALIZACAO_CH_ATIVO FROM GLO_LOCALIZACAO WHERE LOCALIZACAO_IN_ID = ?",
-    [id]
-  );
-
-  if (location.length === 0) {
-    throw new Error("Nenhuma localização encontrada com esse ID!");
-  }
-
-  const [response] = await db.query(
-    "DELETE FROM GLO_LOCALIZACAO WHERE LOCALIZACAO_IN_ID = ?",
-    [id]
-  );
+  const [response] = await db.query(deleteLocationQuery, [id]);
 
   return response;
 };
