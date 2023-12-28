@@ -5,8 +5,8 @@ export const getAll = async (req, res) => {
     const getLocation = await Location.getAllLocation();
     res.status(200).json(getLocation);
   } catch (error) {
-    console.error("Erro ao buscar as localizações:", error);
-    res.status(500).json({ message: "Erro interno do servidor: ", error });
+    console.error("Erro ao buscar as localizações: ", error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -38,7 +38,7 @@ export const createLocation = async (req, res) => {
     res.status(201).json({ msg: "Localização registrada com sucesso!" });
   } catch (error) {
     console.error("Erro ao criar localização: ", error);
-    res.status(500).json("Erro interno do servidor: ", error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -64,25 +64,6 @@ export const updateLocation = async (req, res) => {
     res.status(201).json({ msg: "Localização atualizada com sucesso!" });
   } catch (error) {
     console.log("Erro ao atualizar a localização: ", error);
-    res.status(500).json({ error: "Erro interno no servidor: ", error });
-  }
-};
-
-export const deleteLocation = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const locationExists = await Location.getLocationById(id);
-    if (!locationExists) {
-      return res.status(404).json({
-        error: "Nenhuma localização encontrada! Forneça um ID válido.",
-      });
-    }
-
-    await Location.deleteLocation(id);
-    res.status(200).json({ msg: "Localização deletada com sucesso!" });
-  } catch (error) {
-    console.error("Erro ao excluir localização:", error);
-    res.status(500).json({ message: "Erro interno do servidor." });
+    res.status(500).json({ error: error.message });
   }
 };
