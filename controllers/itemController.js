@@ -1,103 +1,164 @@
 import * as Item from "../models/Item.js";
 
+export const getAllItems = async (req, res) => {
+  try {
+    const item = await Item.getAllItems();
+
+    if (item.length === 0) {
+      return res.status(204);
+    }
+
+    res.status(200).json(item);
+  } catch (error) {
+    console.log("Erro ao realizar a consulta: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getItemByTag = async (req, res) => {
+  try {
+    const tag = req.params.tag;
+
+    const itemTagExists = await Item.getItemByTag(tag);
+    if (!itemTagExists) {
+      return res.status(404).json({
+        error:
+          "Não existe nenhum item com esse número de patrimônio cadastrado.",
+      });
+    }
+
+    res.status(200).json(itemTagExists);
+  } catch (error) {
+    console.log("Erro em encontrar o item: ", error);
+    res.statu(500).json({ error: error.message });
+  }
+};
+
 export const createItem = async (req, res) => {
   try {
+    const {
+      branch,
+      name,
+      description,
+      value,
+      responsable,
+      location,
+      supplier,
+      serialNumber,
+      tag,
+      acquisitionDate,
+      itemGroup,
+      costCenter,
+      invoice,
+    } = req.body;
+
+    const requiredFields = [
+      "branch",
+      "name",
+      "description",
+      "value",
+      "responsable",
+      "location",
+      "supplier",
+      "serialNumber",
+      "tag",
+      "acquisitionDate",
+      "itemGroup",
+      "costCenter",
+      "invoice",
+    ];
+    const missingFields = [];
+
+    requiredFields.forEach((field) => {
+      if (!req.body[field]) {
+        missingFields.push(field);
+      }
+    });
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: `Campos obrigatórios ausentes: ${missingFields.join(", ")}`,
+      });
+    }
+
+    const itemTagExists = await Item.getItemByTag(tag);
+    if (itemTagExists) {
+      return res.status(400).json({
+        error: "Já exixte um item com esse número de patrimônio cadastrado!",
+      });
+    }
+
     const item = {
-      branchId: req.body.branchId,
-      name: req.body.name,
-      description: req.body.description,
-      value: req.body.value,
-      responsable: req.body.responsable,
-      location: req.body.location,
-      supplier: req.body.supplier,
-      serialNumber: req.body.serialNumber,
-      tag: req.body.tag,
-      acquisitionDate: req.body.acquisitionDate,
-      writeOffDate: req.body.writeOffDate,
-      itemGroup: req.body.itemGroup,
-      costCenter: req.body.costCenter,
-      invoice: req.body.invoice,
+      branch,
+      name,
+      description,
+      value,
+      responsable,
+      location,
+      supplier,
+      serialNumber,
+      tag,
+      acquisitionDate,
+      itemGroup,
+      costCenter,
+      invoice,
     };
 
     await Item.createItem(item);
     res.status(201).json({ msg: "Item criado com sucesso!" });
   } catch (error) {
-    console.log(error);
-    res.status(500).json("Erro interno do servidor: ", error);
-  }
-};
-
-export const getAllItems = async (req, res) => {
-  try {
-    const getItem = await Item.getAllItems();
-
-    res.status(200).json(getItem);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Erro interno do servidor: ", error });
-  }
-};
-
-export const getOne = async (req, res) => {
-  try {
-    const tag = req.params.tag;
-    const getItemByTag = await Item.findOne({ tag });
-
-    res.status(200).json(getItemByTag);
-  } catch (error) {
-    console.log("Erro em encontrar o item", error);
+    console.log("Erro ao criar o item: ", error);
+    res.status(500).json({ error: error.message });
   }
 };
 
 export const updateItem = async (req, res) => {
   try {
     const {
+      branch,
       name,
       description,
       value,
-      supplier,
+      responsable,
       serialNumber,
-      acquisitionDate,
+      writeOffDate,
       tag,
-      branch,
-      depreciation,
+      acquisitionDate,
+      itemGroup,
       costCenter,
+      active,
+      supplier,
     } = req.body;
 
     const { id } = req.params;
-    const item = await Item.findById(id).exec();
-    if (!item) {
-      res.status(204).json({ msg: `Nenhum item encontrado com esse ID!` });
+    const itemExists = await Item.getItemById(id);
+    if (!itemExists) {
+      return res.status(404).json({
+        error: `Nenhum item encontrado com esse código! Forneça um ID válido.`,
+      });
     }
-    const response = await item.updateOne({
+
+    const response = {
+      branch,
       name,
       description,
       value,
-      supplier,
+      responsable,
       serialNumber,
-      acquisitionDate,
+      writeOffDate,
       tag,
-      branch,
-      depreciation,
+      acquisitionDate,
+      itemGroup,
       costCenter,
-    });
-    res.status(201).json({ response, msg: "Item atualizado com sucesso!" });
-  } catch (error) {
-    console.log(error);
-  }
-};
+      active,
+      supplier,
+    };
 
-export const deleteItem = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const item = await Item.findById(id).exec();
-    if (!item) {
-      res.status(204).json({ msg: `Nenhum item encontrado!` });
-    }
-    const response = await item.deleteOne();
-    res.status(200).json({ response, msg: "Item excluído com sucesso!" });
+    await Item.updateItem(id, response);
+    res.status(201).json({ msg: "Item atualizado com sucesso!" });
   } catch (error) {
-    console.log(error);
+    console.log("Erro ao atualizar o item: ", error);
+    res.status(500).json({ error: error.message });
   }
 };
 
