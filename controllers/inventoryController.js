@@ -11,10 +11,23 @@ export const getAllInventory = async (req, res) => {
   }
 };
 
+export const getAllItemInventories = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const inventoryItem = await Inventory.getAllItemsInventories(id);
+
+    res.status(200).json(inventoryItem);
+  } catch (error) {
+    console.error("Erro na consulta dos itens de inventários: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const getItemByLocation = async (req, res) => {
   try {
     const location = req.params.location;
-    const getItem = await Item.find({ location });
+
+    const getItem = await Item.getItemByLocation(location);
     res.status(200).json(getItem);
   } catch (error) {
     console.error("Erro ao buscar itens por localização:", error);
@@ -33,27 +46,24 @@ export const createInventory = async (req, res) => {
     );
 
     if (!itemsLocationMatch) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "A localização do inventário é divergente dos itens selecionados.",
-        });
+      return res.status(400).json({
+        error:
+          "Divergência encontrada na localização do inventário. Verifique os itens lidos na tela de Divergências.",
+      });
     }
 
-    const response = {
+    const inventoryData = {
       location,
       observation,
       user,
       items,
     };
 
-    // Chame a função createInventory do seu model
-    await Inventory.createInventory(response);
+    await Inventory.createInventory(inventoryData);
 
-    res.status(201).json({ msg: "Inventário criado com sucesso" });
+    res.status(201).json({ msg: "Inventário realizado com sucesso!" });
   } catch (error) {
-    console.error("Erro ao criar inventário:", error);
-    res.status(500).json({ error: "Erro ao criar inventário" });
+    console.error("Erro ao criar inventário: ", error);
+    res.status(500).json({ error: error.message });
   }
 };
