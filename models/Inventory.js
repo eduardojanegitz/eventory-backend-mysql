@@ -13,6 +13,7 @@ export const getAllInventories = async () => {
   LEFT JOIN GLO_USUARIOS USU ON 
     USU.USUARIO_IN_ID = INV.USUARIO_IN_ID 
   `);
+
   return inventory;
 };
 
@@ -20,7 +21,8 @@ export const getAllItemsInventories = async (id) => {
   const [inventoryItem] = await db.query(
     `
   SELECT 
-    EII.INVENTARIO_ITEM_IN_ID AS _id,
+    EII.INVENTARIO_IN_ID AS _id,
+    EI.ITEM_IN_ID,
     EI.ITEM_ST_NOME AS nome,
     EI.ITEM_ST_DESCRICAO AS descricao,
     GL.LOCALIZACAO_ST_NOME AS localizacao, 
@@ -39,11 +41,12 @@ export const getAllItemsInventories = async (id) => {
   `,
     [id]
   );
+
   return inventoryItem;
 };
 
-export const createInventory = async (inventoryData) => {
-  const { location, observation, user, items } = inventoryData;
+export const openInventory = async (inventoryData) => {
+  const { location, observation, cost, user } = inventoryData;
 
   try {
     await db.query("START TRANSACTION");
@@ -52,65 +55,89 @@ export const createInventory = async (inventoryData) => {
       `INSERT INTO EST_INVENTARIO (
         LOCALIZACAO_IN_ID, 
         INVENTARIO_ST_OBSERVACAO, 
+        CUSTO_IN_ID,
         USUARIO_IN_ID)
-      VALUES (?,?,?)`,
-      [location, observation, user]
+      VALUES (?,?,?,?)`,
+      [location, observation, cost, user]
     );
 
     const inventoryId = inventoryResponse.insertId;
 
-    for (const item of items) {
-      await db.query(
-        `INSERT INTO EST_INVENTARIO_ITEM (
-          INVENTARIO_IN_ID, 
-          ITEM_IN_ID) 
-        VALUES (?, ?)`,
-        [inventoryId, item]
-      );
-    }
-
     await db.query("COMMIT");
 
-    return inventoryResponse;
+    return inventoryId;
   } catch (error) {
     await db.query("ROLLBACK");
     throw error;
   }
 };
 
-export const checkItemsLocationMatch = async (
-  inventoryLocation,
-  items,
-  user
-) => {
-  const [result] = await db.query(
-    `SELECT 
-      ITEM_IN_ID 
-    FROM 
-      EST_ITENS 
-    WHERE 
-      LOCALIZACAO_IN_ID = ?`,
-    [inventoryLocation]
+export const addItemToInventory = async (itemId) => {
+  const [response] = await db.query(
+    `INSERT INTO EST_INVENTARIO_ITEM (
+        INVENTARIO_IN_ID, 
+        ITEM_IN_ID) 
+      VALUES ((SELECT MAX(INVENTARIO_IN_ID) FROM EST_INVENTARIO), ?)`,
+    [itemId]
   );
 
-  const locationItems = result.map((item) => item.ITEM_IN_ID);
+  return response;
+};
 
-  const missingItems = items.filter((item) => !locationItems.includes(item));
-  const extraItems = locationItems.filter((item) => !items.includes(item));
+export const deleteItemInventory = async (id, inventoryId) => {
+  const [response] = await db.query(
+    `DELETE FROM EST_INVENTARIO_ITEM WHERE ITEM_IN_ID = ? AND INVENTARIO_IN_ID = ?`,
+    [id, inventoryId]
+  );
 
-  if (missingItems.length > 0 || extraItems.length > 0) {
-    for (const item of missingItems.concat(extraItems)) {
-      await db.query(
-        `INSERT INTO EST_DIVERGENCIA (
-          ITEM_IN_ID, 
-          LOCALIZACAO_IN_ID, 
-          USUARIO_IN_ID) 
-        VALUES (?, ?, ?)`,
-        [item, inventoryLocation, user]
-      );
-    }
-    return false;
-  }
+  return response;
+};
+
+
+export const finalizeInventory = async (inventoryId) => {
+  await db.query(
+    `UPDATE EST_INVENTARIO
+       SET INVENTARIO_CH_STATUS = 'F'
+       WHERE INVENTARIO_IN_ID = ?`,
+    [inventoryId]
+  );
 
   return true;
+};
+
+export const checkItemsLocationMatch = async (inventoryId, user) => {
+  try {
+    const [result] = await db.query(
+      `SELECT ITEM_IN_ID 
+       FROM EST_INVENTARIO_ITEM 
+       WHERE INVENTARIO_IN_ID = ?`,
+      [inventoryId]
+    );
+
+    const items = result.map((item) => item.ITEM_IN_ID);
+
+    const [locationItemsResult] = await db.query(
+      `SELECT ITEM_IN_ID 
+       FROM EST_ITENS 
+       WHERE LOCALIZACAO_IN_ID = (SELECT LOCALIZACAO_IN_ID FROM EST_INVENTARIO WHERE INVENTARIO_IN_ID = ?)`,
+      [inventoryId]
+    );
+
+    const locationItems = locationItemsResult.map((item) => item.ITEM_IN_ID);
+
+    const missingItems = items.filter((item) => !locationItems.includes(item));
+    const extraItems = locationItems.filter((item) => !items.includes(item));
+
+    if (missingItems.length > 0 || extraItems.length > 0) {
+      await db.query(
+        `UPDATE EST_INVENTARIO SET INVENTARIO_CH_STATUS = 'D' WHERE INVENTARIO_IN_ID = ?`,
+        [inventoryId]
+      );
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    throw error;
+  }
 };

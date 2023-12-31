@@ -1,9 +1,30 @@
-import * as Inventory from "../models/Inventory.js";
-import * as Item from "../models/Item.js";
+import {
+  addItemToInventory,
+  getAllInventories,
+  getAllItemsInventories,
+  openInventory,
+  finalizeInventory,
+  checkItemsLocationMatch,
+  deleteItemInventory,
+} from "../models/Inventory.js";
+import { getItemById, getItemByLocation } from "../models/Item.js";
+
+export const createItem = async (req, res) => {
+  try {
+    const { itemId } = req.body;
+
+    await addItemToInventory(itemId);
+
+    res.status(201).json({ msg: "Item adicionado ao inventário com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao adicionar item ao inventário: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
 
 export const getAllInventory = async (req, res) => {
   try {
-    const getInventory = await Inventory.getAllInventories();
+    const getInventory = await getAllInventories();
     res.status(200).json(getInventory);
   } catch (error) {
     console.error("Erro na consulta dos inventários:", error);
@@ -14,7 +35,7 @@ export const getAllInventory = async (req, res) => {
 export const getAllItemInventories = async (req, res) => {
   try {
     const { id } = req.params;
-    const inventoryItem = await Inventory.getAllItemsInventories(id);
+    const inventoryItem = await getAllItemsInventories(id);
 
     res.status(200).json(inventoryItem);
   } catch (error) {
@@ -23,11 +44,11 @@ export const getAllItemInventories = async (req, res) => {
   }
 };
 
-export const getItemByLocation = async (req, res) => {
+export const itemByLocation = async (req, res) => {
   try {
     const location = req.params.location;
 
-    const getItem = await Item.getItemByLocation(location);
+    const getItem = await getItemByLocation(location);
     res.status(200).json(getItem);
   } catch (error) {
     console.error("Erro ao buscar itens por localização:", error);
@@ -37,14 +58,27 @@ export const getItemByLocation = async (req, res) => {
 
 export const createInventory = async (req, res) => {
   try {
-    const { location, observation, user, items } = req.body;
+    const { location, observation, cost, user } = req.body;
 
-    const itemsLocationMatch = await Inventory.checkItemsLocationMatch(
+    await openInventory({
       location,
-      items,
-      user
-    );
+      observation,
+      cost,
+      user,
+    });
 
+    res.status(201).json({ msg: "Inventário iniciado com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao criar inventário: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const finalize = async (req, res) => {
+  try {
+    const { inventoryId } = req.body;
+
+    const itemsLocationMatch = await checkItemsLocationMatch(inventoryId);
     if (!itemsLocationMatch) {
       return res.status(400).json({
         error:
@@ -52,18 +86,35 @@ export const createInventory = async (req, res) => {
       });
     }
 
-    const inventoryData = {
-      location,
-      observation,
-      user,
-      items,
-    };
+    await finalizeInventory(inventoryId);
 
-    await Inventory.createInventory(inventoryData);
-
-    res.status(201).json({ msg: "Inventário realizado com sucesso!" });
+    res.status(200).json({ msg: "Inventário finalizado com sucesso!" });
   } catch (error) {
-    console.error("Erro ao criar inventário: ", error);
+    console.error("Erro ao finalizar inventário: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const deleteItemFromInventory = async (req, res) => {
+  try {
+    const { id, inventoryId } = req.body;
+
+    // Verifica se o item de inventário existe antes de tentar excluí-lo
+    const inventoryItems = await getAllItemsInventories(inventoryId);
+    const itemExists = inventoryItems.some((item) => item.ITEM_IN_ID === id);
+
+    // console.log(itemExists)
+
+    if (!itemExists) {
+      return res.status(404).json({ error: "Nenhum item encontrado com esse código no inventário." });
+    }
+
+    // Exclui o item de inventário
+    await deleteItemInventory(id, inventoryId);
+
+    res.status(200).json({ msg: "Item excluído do inventário com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao excluir item do inventário: ", error);
     res.status(500).json({ error: error.message });
   }
 };
