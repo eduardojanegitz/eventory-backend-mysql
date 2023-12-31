@@ -11,7 +11,8 @@ export const getItemById = async (id) => {
 export const getItemByTag = async (tag) => {
   const [item] = await db.query(
     `
-  SELECT * FROM EST_ITENS WHERE ITEM_ST_PATRIMONIO = ?
+  SELECT ITEM_IN_ID AS itemId, ITEM_ST_DESCRICAO AS description, ITEM_ST_NOME AS name,
+  ITEM_ST_SERIE AS serialNumber, ITEM_ST_PATRIMONIO AS tag FROM EST_ITENS WHERE ITEM_ST_PATRIMONIO = ?
   `,
     [tag]
   );
@@ -55,6 +56,14 @@ export const getAllItems = async () => {
 
   return item;
 };
+
+export const getItemByLocation = async (location) => {
+  const [item] = await db.query (`
+    SELECT * FROM GLO_LOCALIZACAO WHERE LOCALIZACAO_ST_NOME = ?
+  `, [location])
+
+  return item[0];
+}
 
 export const createItem = async (itemData) => {
   const {
