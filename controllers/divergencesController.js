@@ -11,6 +11,30 @@ export const getAllDivergences = async (req, res) => {
   }
 };
 
+export const itemsDivergences = async (req, res) => {
+  try {
+    const { inventoryId } = req.params;
+
+    const getDivergences = await Divergences.getItemsDivergences(inventoryId);
+    res.status(200).json(getDivergences);
+  } catch (error) {
+    console.error("Erro na consulta das divergências:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const correctItems = async (req, res) => {
+  try {
+    const { inventoryId } = req.params;
+
+    const getDivergences = await Divergences.getCorrectItems(inventoryId);
+    res.status(200).json(getDivergences);
+  } catch (error) {
+    console.error("Erro na consulta das divergências:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const createDivergence = async (req, res) => {
   try {
     const { location } = req.body;
@@ -72,4 +96,4 @@ export const getAllApprovedDivergences = async (req, res) => {
     console.error("Erro na consulta das divergências:", error);
     res.status(500).json({ error: "Erro ao buscar divergências" });
   }
-} 
+};
