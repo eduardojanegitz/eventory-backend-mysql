@@ -114,12 +114,13 @@ export const deleteItemInventory = async (itemId, inventoryId) => {
   return response;
 };
 
-export const finalizeInventory = async (inventoryId) => {
+export const finalizeInventory = async (inventoryId, observation) => {
   await db.query(
     `UPDATE EST_INVENTARIO
        SET INVENTARIO_CH_STATUS = 'F'
+       ${observation ? ", INVENTARIO_ST_OBSERVACAO = ?" : ""}
        WHERE INVENTARIO_IN_ID = ?`,
-    [inventoryId]
+    observation ? [observation, inventoryId] : [inventoryId]
   );
 
   return true;

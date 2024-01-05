@@ -119,7 +119,7 @@ export const createInventory = async (req, res) => {
 
 export const finalize = async (req, res) => {
   try {
-    const { inventoryId } = req.body;
+    const { inventoryId, observation } = req.body;
 
     const itemsLocationMatch = await checkItemsLocationMatch(inventoryId);
     if (!itemsLocationMatch) {
@@ -129,7 +129,7 @@ export const finalize = async (req, res) => {
       });
     }
 
-    await finalizeInventory(inventoryId);
+    await finalizeInventory(inventoryId, observation);
 
     res.status(200).json({ msg: "Inventário finalizado com sucesso!" });
   } catch (error) {
