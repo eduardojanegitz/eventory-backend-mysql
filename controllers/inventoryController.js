@@ -6,14 +6,39 @@ import {
   finalizeInventory,
   checkItemsLocationMatch,
   deleteItemInventory,
+  isItemInInventory,
 } from "../models/Inventory.js";
-import { getItemById, getItemByLocation } from "../models/Item.js";
+import { getItemByLocation } from "../models/Item.js";
 
 export const createItem = async (req, res) => {
   try {
-    const { itemId } = req.body;
+    const { itemId, inventoryId } = req.body;
 
-    await addItemToInventory(itemId);
+    const requiredFields = [
+      "itemId",
+      "inventoryId",
+    ];
+    const missingFields = [];
+
+    requiredFields.forEach((field) => {
+      if (!req.body[field]) {
+        missingFields.push(field);
+      }
+    });
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: `Campos obrigatórios ausentes: ${missingFields.join(", ")}`,
+      });
+    }
+
+    const isItemAlreadyInInventory = await isItemInInventory(itemId, inventoryId);
+
+    if (isItemAlreadyInInventory) {
+      return res.status(400).json({ error: "Não pode ser lido o mesmo item duas vezes!" });
+    }
+
+    await addItemToInventory(itemId, inventoryId);
 
     res.status(201).json({ msg: "Item adicionado ao inventário com sucesso!" });
   } catch (error) {
@@ -34,8 +59,8 @@ export const getAllInventory = async (req, res) => {
 
 export const getAllItemInventories = async (req, res) => {
   try {
-    const { id } = req.params;
-    const inventoryItem = await getAllItemsInventories(id);
+    const { itemId } = req.params;
+    const inventoryItem = await getAllItemsInventories(itemId);
 
     res.status(200).json(inventoryItem);
   } catch (error) {
@@ -58,16 +83,34 @@ export const itemByLocation = async (req, res) => {
 
 export const createInventory = async (req, res) => {
   try {
-    const { location, observation, cost, user } = req.body;
+    const { location, costCenter } = req.body;
 
-    await openInventory({
-      location,
-      observation,
-      cost,
-      user,
+    const requiredFields = [
+      "location",
+      "costCenter"
+    ];
+    const missingFields = [];
+
+    requiredFields.forEach((field) => {
+      if (!req.body[field]) {
+        missingFields.push(field);
+      }
     });
 
-    res.status(201).json({ msg: "Inventário iniciado com sucesso!" });
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: `Campos obrigatórios ausentes: ${missingFields.join(", ")}`,
+      });
+    }
+
+    const response = await openInventory({
+      location,
+      // observation,
+      costCenter,
+      user: req.id,
+    });
+
+    res.status(201).json({ inventoryId: response, msg: "Inventário iniciado com sucesso!" });
   } catch (error) {
     console.error("Erro ao criar inventário: ", error);
     res.status(500).json({ error: error.message });
@@ -97,20 +140,16 @@ export const finalize = async (req, res) => {
 
 export const deleteItemFromInventory = async (req, res) => {
   try {
-    const { id, inventoryId } = req.body;
+    const { itemId, inventoryId } = req.params;
 
-    // Verifica se o item de inventário existe antes de tentar excluí-lo
     const inventoryItems = await getAllItemsInventories(inventoryId);
-    const itemExists = inventoryItems.some((item) => item.ITEM_IN_ID === id);
-
-    // console.log(itemExists)
+    const itemExists = inventoryItems.some((item) => item.itemId === Number(itemId));
 
     if (!itemExists) {
       return res.status(404).json({ error: "Nenhum item encontrado com esse código no inventário." });
     }
 
-    // Exclui o item de inventário
-    await deleteItemInventory(id, inventoryId);
+    await deleteItemInventory(itemId, inventoryId);
 
     res.status(200).json({ msg: "Item excluído do inventário com sucesso!" });
   } catch (error) {

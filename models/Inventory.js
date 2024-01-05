@@ -6,27 +6,33 @@ export const getAllInventories = async () => {
     INV.INVENTARIO_IN_ID AS _id,
     DATE_FORMAT(INV.INVENTARIO_DT_CRIACAO, '%d/%m/%Y %h:%i:%s') AS createdAt,
     LOC.LOCALIZACAO_ST_NOME AS location, 
-    USU.USUARIO_ST_ALTERNATIVO AS user
-  FROM EST_INVENTARIO INV
+    USU.USUARIO_ST_ALTERNATIVO AS user,
+    GC.CUSTO_ST_NOME AS costCenter
+  FROM 
+    EST_INVENTARIO INV
   LEFT JOIN GLO_LOCALIZACAO LOC ON 
     LOC.LOCALIZACAO_IN_ID = INV.LOCALIZACAO_IN_ID 
   LEFT JOIN GLO_USUARIOS USU ON 
     USU.USUARIO_IN_ID = INV.USUARIO_IN_ID 
+  LEFT JOIN GLO_CENTRO_CUSTO GC ON 
+    GC.CUSTO_IN_ID = INV.CUSTO_IN_ID
+  WHERE
+    INV.INVENTARIO_CH_STATUS = 'F'
   `);
 
   return inventory;
 };
 
-export const getAllItemsInventories = async (id) => {
+export const getAllItemsInventories = async (inventoryId) => {
   const [inventoryItem] = await db.query(
     `
   SELECT 
     EII.INVENTARIO_IN_ID AS _id,
-    EI.ITEM_IN_ID,
-    EI.ITEM_ST_NOME AS nome,
-    EI.ITEM_ST_DESCRICAO AS descricao,
-    GL.LOCALIZACAO_ST_NOME AS localizacao, 
-    EI.ITEM_ST_SERIE AS serial,
+    EI.ITEM_IN_ID AS itemId,
+    EI.ITEM_ST_NOME AS name,
+    EI.ITEM_ST_DESCRICAO AS description,
+    GL.LOCALIZACAO_ST_NOME AS location, 
+    EI.ITEM_ST_SERIE AS serialNumber,
     EI.ITEM_ST_PATRIMONIO AS tag
   FROM
     EST_INVENTARIO_ITEM EII 
@@ -39,14 +45,14 @@ export const getAllItemsInventories = async (id) => {
   WHERE 
 	  EII.INVENTARIO_IN_ID = ? 
   `,
-    [id]
+    [inventoryId]
   );
 
   return inventoryItem;
 };
 
 export const openInventory = async (inventoryData) => {
-  const { location, observation, cost, user } = inventoryData;
+  const { location, costCenter, user } = inventoryData;
 
   try {
     await db.query("START TRANSACTION");
@@ -54,11 +60,10 @@ export const openInventory = async (inventoryData) => {
     const [inventoryResponse] = await db.query(
       `INSERT INTO EST_INVENTARIO (
         LOCALIZACAO_IN_ID, 
-        INVENTARIO_ST_OBSERVACAO, 
         CUSTO_IN_ID,
         USUARIO_IN_ID)
-      VALUES (?,?,?,?)`,
-      [location, observation, cost, user]
+      VALUES (?,?,?)`,
+      [location, costCenter, user]
     );
 
     const inventoryId = inventoryResponse.insertId;
@@ -72,27 +77,42 @@ export const openInventory = async (inventoryData) => {
   }
 };
 
-export const addItemToInventory = async (itemId) => {
+export const addItemToInventory = async (itemId, inventoryId) => {
   const [response] = await db.query(
     `INSERT INTO EST_INVENTARIO_ITEM (
-        INVENTARIO_IN_ID, 
-        ITEM_IN_ID) 
-      VALUES ((SELECT MAX(INVENTARIO_IN_ID) FROM EST_INVENTARIO), ?)`,
-    [itemId]
+        ITEM_IN_ID,
+        INVENTARIO_IN_ID) 
+      VALUES (?, ?)`,
+    [itemId, inventoryId]
   );
 
   return response;
 };
 
-export const deleteItemInventory = async (id, inventoryId) => {
+export const isItemInInventory = async (itemId, inventoryId) => {
+  try {
+    const [result] = await db.query(
+      "SELECT COUNT(*) as count FROM EST_INVENTARIO_ITEM WHERE ITEM_IN_ID = ? AND INVENTARIO_IN_ID = ?",
+      [itemId, inventoryId]
+    );
+
+    const itemCount = result[0].count;
+
+    return itemCount > 0;
+  } catch (error) {
+    console.error("Erro ao verificar se o item está no inventário: ", error);
+    throw error;
+  }
+};
+
+export const deleteItemInventory = async (itemId, inventoryId) => {
   const [response] = await db.query(
     `DELETE FROM EST_INVENTARIO_ITEM WHERE ITEM_IN_ID = ? AND INVENTARIO_IN_ID = ?`,
-    [id, inventoryId]
+    [itemId, inventoryId]
   );
 
   return response;
 };
-
 
 export const finalizeInventory = async (inventoryId) => {
   await db.query(

@@ -16,13 +16,13 @@ const router = express.Router();
 router.get("/inventory", getAllInventory);
 router.get("/inventory/item/:tag", getItemByTag);
 router.get("/inventory/location/:location", itemByLocation);
-router.get("/inventory/:id", getAllItemInventories);
-// router.post("/inventory", authMiddleware, createInventory);
-router.post("/inventory", createInventory);
+router.get("/inventory/:itemId", getAllItemInventories);
+router.post("/inventory", authMiddleware, createInventory);
+// router.post("/inventory", createInventory);.
 router.post("/inventory/finalize", finalize); 
-router.post("/inventory/item", createItem);
+router.post("/inventory/item", authMiddleware, createItem);
 
-router.delete("/inventory/item/delete", deleteItemFromInventory);
+router.delete("/inventory/item/delete/:itemId/:inventoryId", deleteItemFromInventory);
 
 
 export default router;
