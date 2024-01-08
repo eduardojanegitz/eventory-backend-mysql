@@ -138,6 +138,13 @@ export const updateItem = async (req, res) => {
       });
     }
 
+    const itemTagExistsByTag = await Item.getItemByTag(tag);
+    if (itemTagExistsByTag) {
+      return res.status(400).json({
+        error: "Já exixte um item com esse número de patrimônio cadastrado!",
+      });
+    }
+
     const response = {
       branch,
       name,
@@ -185,5 +192,63 @@ export const uploadItemImage = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ msg: "Erro interno do servidor" });
+  }
+};
+
+export const activateItemById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const itemExists = await Item.getItemById(id);
+    if (!itemExists) {
+      return res
+        .status(404)
+        .json({ error: `Nenhum item encontrado com o código: ${id}` });
+    }
+
+    await Item.activateItem(id);
+    res.status(200).json({ msg: "Item ativado com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao ativar item:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const inactivateItemById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const itemExists = await Item.getItemById(id);
+    if (!itemExists) {
+      return res
+        .status(404)
+        .json({ error: `Nenhum item encontrado com o código: ${id}` });
+    }
+
+    await Item.inactivateItem(id);
+    res.status(200).json({ msg: "Item inativado com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao inativar item:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const writeOff = async (req, res) => {
+  try {
+    const { writeOffDate } = req.body;
+    const { id } = req.params;
+
+    const itemExists = await Item.getItemById(id);
+    if (!itemExists) {
+      return res
+        .status(404)
+        .json({ error: `Nenhum item encontrado com o código: ${id}` });
+    }
+
+    await Item.writeOffItem(writeOffDate, id);
+    res.status(200).json({ msg: "Item dado baixa com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao dar baixa no item:", error);
+    res.status(500).json({ error: error.message });
   }
 };

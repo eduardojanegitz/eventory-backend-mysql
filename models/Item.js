@@ -23,6 +23,7 @@ export const getAllItems = async () => {
   const [item] = await db.query(`
      SELECT 
       EI.ITEM_IN_ID AS _id,
+      GF.FILIAL_IN_ID AS branchId,
       GF.FILIAL_ST_NOME AS branch, 
       EI.ITEM_ST_NOME AS name, 
       EI.ITEM_ST_DESCRICAO AS description, 
@@ -30,15 +31,17 @@ export const getAllItems = async () => {
       GL.LOCALIZACAO_ST_NOME AS location, 
       EI.ITEM_ST_SERIE AS serialNumber, 
       EI.ITEM_ST_PATRIMONIO AS tag, 
-      EI.ITEM_DT_AQUISICAO AS acquisitionDate, 
-      EI.ITEM_DT_BAIXA AS writeOffDate, 
+      DATE_FORMAT(EI.ITEM_DT_AQUISICAO, '%m/%d/%Y') AS acquisitionDate,
+      EG.GRUPO_IN_ID AS itemGroupId,
       EG.GRUPO_ST_NOME AS itemGroup, 
+      GCC.CUSTO_IN_ID AS costCenterId,
       GCC.CUSTO_ST_NOME AS costCenter, 
       EI.ITEM_IN_NOTA AS invoice,  
+      EI.ITEM_ST_FORNECEDOR AS supplier,
       CASE
         ITEM_CH_ATIVO 
-        WHEN 'S' THEN 'Ativo'
-        WHEN 'N' THEN 'Inativo'
+        WHEN 'A' THEN 'Ativo'
+        WHEN 'I' THEN 'Inativo'
         ELSE 'N/D'
       END AS active,
       DATE_FORMAT(EI.ITEM_DT_CRIACAO, '%d/%m/%Y %H:%i:%s') AS createdAt
@@ -52,18 +55,23 @@ export const getAllItems = async () => {
       EG.GRUPO_IN_ID = EI.GRUPO_IN_ID 
     LEFT JOIN GLO_CENTRO_CUSTO GCC ON
       GCC.CUSTO_IN_ID = EI.CUSTO_IN_ID
+    WHERE 
+      EI.ITEM_CH_ATIVO <> 'B'
     `);
 
   return item;
 };
 
 export const getItemByLocation = async (location) => {
-  const [item] = await db.query (`
+  const [item] = await db.query(
+    `
     SELECT * FROM GLO_LOCALIZACAO WHERE LOCALIZACAO_ST_NOME = ?
-  `, [location])
+  `,
+    [location]
+  );
 
   return item[0];
-}
+};
 
 export const createItem = async (itemData) => {
   const {
@@ -154,6 +162,33 @@ export const updateItem = async (id, itemData) => {
   const updateParams = [...updateValues, id];
 
   const [response] = await db.query(updateQuery, updateParams);
+
+  return response;
+};
+
+export const activateItem = async (id) => {
+  const [response] = await db.query(
+    `UPDATE EST_ITENS SET ITEM_CH_ATIVO = 'A' WHERE ITEM_IN_ID = ?`,
+    [id]
+  );
+
+  return response;
+};
+
+export const inactivateItem = async (id) => {
+  const [response] = await db.query(
+    `UPDATE EST_ITENS SET ITEM_CH_ATIVO = 'I' WHERE ITEM_IN_ID = ?`,
+    [id]
+  );
+
+  return response;
+};
+
+export const writeOffItem = async (writeOffDate, id) => {
+  const [response] = await db.query(
+    `UPDATE EST_ITENS SET ITEM_CH_ATIVO = 'B', ITEM_DT_BAIXA = ? WHERE ITEM_IN_ID = ?`,
+    [writeOffDate, id]
+  );
 
   return response;
 };
