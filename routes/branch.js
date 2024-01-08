@@ -1,12 +1,20 @@
 import express from "express";
-import { createBranch , deleteBranch, getAll, updateBranch } from "../controllers/branchController.js";
+import {
+  allBranches,
+  newBranch,
+  inactivateBranchById,
+  activateBranchById,
+  editBranch,
+  activeBranches
+} from "../controllers/branchController.js";
 
 const router = express.Router();
 
-router.get("/branch", getAll);
-router.post("/branch", createBranch);
-router.put("/branch/:id", updateBranch);
-router.delete("/branch/:id", deleteBranch);
-
+router.get("/branch", allBranches);
+router.get("/branch/active", activeBranches);
+router.post("/branch", newBranch);
+router.put("/branch/:id", editBranch);
+router.put("/branch/inactive/:id", inactivateBranchById);
+router.put("/branch/active/:id", activateBranchById);
 
 export default router;
