@@ -1,28 +1,115 @@
-import Product from "../models/Product.js";
-import ProductStat from "../models/ProductStat.js";
-import User from "../models/User.js";
-import Transaction from "../models/Transaction.js";
-import Item from "../models/Item.js";
+import {
+  getAllItems,
+  getItemAvarageAge,
+  getItemByCostCenter,
+  getItemsTotalValue,
+  getItemsTotalValueInYear,
+  getItemByItemGroup,
+  getPercentageLastMonth
+} from "../models/Dashboard.js";
 
-export const getProducts = async (req, res) => {
+export const allItems = async (req, res) => {
   try {
-    const products = await Product.find();
+    const allItems = await getAllItems();
 
-    const productsWithStats = await Promise.all(
-      products.map(async (product) => {
-        const stat = await ProductStat.find({
-          productId: product._id,
-        });
-        return {
-          ...product._doc,
-          stat,
-        };
-      })
-    );
+    if (allItems.length === 0) {
+      res.status(204);
+    }
 
-    res.status(200).json(productsWithStats);
+    res.status(200).json(allItems);
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    console.error("Erro ao buscar a quantidade total de itens: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const itemsTotalValue = async (req, res) => {
+  try {
+    const totalValue = await getItemsTotalValue();
+
+    if (totalValue.length === 0) {
+      res.status(204);
+    }
+
+    res.status(200).json(totalValue);
+  } catch (error) {
+    console.error("Erro ao buscar o valor total dos itens: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const percentageLastMonth = async (req, res) => {
+  try {
+    const percentageLastMonth = await getPercentageLastMonth();
+
+    if (percentageLastMonth.length === 0) {
+      res.status(204);
+    }
+
+    res.status(200).json(percentageLastMonth);
+  } catch (error) {
+    console.error("Erro ao buscar a porcentagem dos itens com referência ao mês anterior: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const itemsTotalValueInYear = async (req, res) => {
+  try {
+    const totalValueInYear = await getItemsTotalValueInYear();
+
+    if (totalValueInYear.length === 0) {
+      res.status(204);
+    }
+
+    res.status(200).json(totalValueInYear);
+  } catch (error) {
+    console.error("Erro ao buscar o valor total dos itens no ano: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const itemAvarageAge = async (req, res) => {
+  try {
+    const itemAvarageAge = await getItemAvarageAge();
+
+    if (itemAvarageAge.length === 0) {
+      res.status(204);
+    }
+
+    res.status(200).json(itemAvarageAge);
+  } catch (error) {
+    console.error("Erro ao buscar o valor total dos itens no ano: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const itemByCostCenter = async (req, res) => {
+  try {
+    const itemByCostCenter = await getItemByCostCenter();
+
+    if (itemByCostCenter.length === 0) {
+      res.status(204);
+    }
+
+    res.status(200).json(itemByCostCenter);
+  } catch (error) {
+    console.error("Erro ao buscar o item por centro de custo: ", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const itemByItemGroup = async (req, res) => {
+  try {
+    const itemByItemGroup = await getItemByItemGroup();
+
+    if (itemByItemGroup.length === 0) {
+      res.status(204);
+    }
+
+    res.status(200).json(itemByItemGroup);
+  } catch (error) {
+    console.error("Erro ao buscar o item por centro de custo: ", error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -141,69 +228,5 @@ export const getItemsFromLastMonth = async (req, res) => {
   } catch (error) {
     console.log("Erro em encontrar os itens do mês anterior", error);
     res.status(500).json({ error: "Erro interno do servidor" });
-  }
-};
-
-export const getItemByCostCenter = async (req, res) => {
-  try {
-    const itemByCostCenter = await Item.aggregate([
-      {
-        $group: {
-          _id: "$costCenter",
-          totalValue: { $sum: "$value" },
-        },
-      },
-    ]);
-
-    res.status(200).json(itemByCostCenter);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erro interno no servidor." });
-  }
-};
-
-export const getItemByItemGroup = async (req, res) => {
-  try {
-    const itemByItemGroup = await Item.aggregate([
-      {
-        $group: {
-          _id: "$itemGroup",
-          totalValue: { $sum: "$value" },
-        },
-      },
-    ]);
-
-    res.status(200).json(itemByItemGroup);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erro interno no servidor." });
-  }
-};
-
-export const calculateAverageAge = async (req, res) => {
-  try {
-    // Obtenha todos os itens
-    const allItems = await Item.find();
-
-    if (allItems.length === 0) {
-      return res.status(204).json("Nenhum item encontrado");
-    }
-
-    const ages = allItems.map((item) => {
-      const acquisitionDate = new Date(item.acquisitionDate);
-      const currentDate = new Date();
-      const ageInYears =
-        currentDate.getFullYear() - acquisitionDate.getFullYear();
-
-      return ageInYears;
-    });
-
-    const totalAges = ages.reduce((acc, age) => acc + age, 0);
-    const averageAge = totalAges / ages.length;
-
-    res.status(200).json({ averageAge });
-  } catch (error) {
-    console.error("Erro ao calcular a idade média do ativo imobilizado", error);
-    res.status(500).json({ error: "Erro interno no servidor." });
   }
 };

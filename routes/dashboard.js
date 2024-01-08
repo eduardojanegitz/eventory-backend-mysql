@@ -1,20 +1,22 @@
-// import express from "express";
-// import {
-//   // calculateAverageAge,
-//   getItemByCostCenter,
-//   getItemByItemGroup,
-//   getItemsFromLastMonth,
-//   totalValue,
-//   totalValueByYear,
-// } from "../controllers/dashboardController.js";
+import express from "express";
+import {
+  allItems,
+  itemAvarageAge,
+  itemsTotalValue,
+  itemsTotalValueInYear,
+  itemByCostCenter,
+  itemByItemGroup,
+  percentageLastMonth,
+} from "../controllers/dashboardController.js";
 
-// const router = express.Router();
+const router = express.Router();
 
-// router.get("/dashboard/item/total", totalValue);
-// router.get("/dashboard/item/lastmonth", getItemsFromLastMonth);
-// router.get("/dashboard/item/totalByYear", totalValueByYear);
-// router.get("/dashboard/item/itemByCostCenter", getItemByCostCenter);
-// router.get("/dashboard/item/itemByItemGroup", getItemByItemGroup);
-// // router.get("/dashboard/item/avaregeAssets", calculateAverageAge);
+router.get("/dashboard/item/total", allItems);
+router.get("/dashboard/item/total-value", itemsTotalValue);
+router.get("/dashboard/item/percentage-last-month", percentageLastMonth);
+router.get("/dashboard/item/total-value-year", itemsTotalValueInYear);
+router.get("/dashboard/item/avarege-items", itemAvarageAge);
+router.get("/dashboard/item/itemByCostCenter", itemByCostCenter);
+router.get("/dashboard/item/itemByItemGroup", itemByItemGroup);
 
-// export default router;
+export default router;
