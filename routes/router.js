@@ -8,7 +8,7 @@ import auth from "./auth.js";
 import location from "./location.js";
 import itemGroup from "./itemGroup.js";
 import divergences from "./divergences.js";
-// import dashboard from "./dashboard.js";
+import dashboard from "./dashboard.js";
 import branch from "./branch.js";
 
 const router = express.Router();
@@ -22,7 +22,7 @@ router.use("/", auth);
 router.use("/", location);
 router.use("/", itemGroup);
 router.use("/", divergences);
-// router.use("/", dashboard);
+router.use("/", dashboard);
 router.use("/", branch);
 
 export default router;
